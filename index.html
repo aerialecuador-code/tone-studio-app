@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#f5f0e8"/>
+  <title>Tone Studio by Aerial</title>
+  <link rel="manifest" href="data:application/json,{
+    &quot;name&quot;: &quot;Tone Studio&quot;,
+    &quot;short_name&quot;: &quot;Tone Studio&quot;,
+    &quot;start_url&quot;: &quot;/&quot;,
+    &quot;display&quot;: &quot;standalone&quot;,
+    &quot;background_color&quot;: &quot;#f5f0e8&quot;,
+    &quot;theme_color&quot;: &quot;#7a3a4a&quot;,
+    &quot;icons&quot;: [{
+      &quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23f5f0e8'/%3E%3Crect x='60' y='90' width='140' height='330' rx='70' fill='%237a3a4a'/%3E%3Crect x='312' y='90' width='140' height='330' rx='70' fill='%237a3a4a'/%3E%3Cline x1='200' y1='173' x2='312' y2='256' stroke='%23f5f0e8' stroke-width='36' stroke-linecap='round'/%3E%3Cline x1='200' y1='339' x2='312' y2='256' stroke='%23f5f0e8' stroke-width='36' stroke-linecap='round'/%3E%3C/svg%3E&quot;,
+      &quot;sizes&quot;: &quot;512x512&quot;,
+      &quot;type&quot;: &quot;image/svg+xml&quot;,
+      &quot;purpose&quot;: &quot;any maskable&quot;
+    }]
+  }">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23f5f0e8'/%3E%3Crect x='60' y='90' width='140' height='330' rx='70' fill='%237a3a4a'/%3E%3Crect x='312' y='90' width='140' height='330' rx='70' fill='%237a3a4a'/%3E%3Cline x1='200' y1='173' x2='312' y2='256' stroke='%23f5f0e8' stroke-width='36' stroke-linecap='round'/%3E%3Cline x1='200' y1='339' x2='312' y2='256' stroke='%23f5f0e8' stroke-width='36' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPA_URL = "https://wrihoblavuqqetbnsrzi.supabase.co";
+    const SUPA_KEY = "sb_publishable_T-UWZx0I6EIlRvO4Gk8QzA_7xAxgUZz";
+    const db = supabase.createClient(SUPA_URL, SUPA_KEY);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#f5f0e8;font-family:'DM Sans',sans-serif}
+    ::-webkit-scrollbar{display:none}
+    .tap{transition:transform .12s,opacity .12s;cursor:pointer}
+    .tap:active{transform:scale(.96);opacity:.82}
+    input,select,button{font-family:'DM Sans',sans-serif}
+    input:focus{outline:none;box-shadow:0 0 0 2px #7a3a4a30}
+    ::placeholder{color:#ccc}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const ADMIN_PASSWORD = "aerial2024";
+const ADMIN_WA       = "593988042055";
+const CANCEL_HOURS   = 24;
+const CAPACITY       = 15;
+const BG             = "#f5f0e8";
+const BRAND          = "#7a3a4a";
+
+const PLANS = [
+  { id:"light",   name:"Light / Weekend", classes:8,   price:125, months:2, unlimited:false, color:"#7a3a4a", light:"#eedde2" },
+  { id:"basic",   name:"Basic",           classes:12,  price:165, months:1, unlimited:false, color:"#4a7a5a", light:"#ddeee3" },
+  { id:"premium", name:"Premium",         classes:999, price:185, months:1, unlimited:true,  color:"#1a1a1a", light:"#e8e4dc" },
+  { id:"pro",     name:"Pro",             classes:999, price:495, months:3, unlimited:true,  color:"#7a5a1a", light:"#f0e8d0" },
+];
+
+const SCHEDULE = {
+  Lun: { times:["6:00 am","7:00 am","8:05 am","9:15 am","10:30 am"], label:"Mobility Metcon + Strength Lower Body" },
+  Mar: { times:["6:00 am","7:00 am","8:05 am","9:15 am","10:30 am"], label:"Mobility & Upper Body + Core" },
+  Mié: { times:["6:00 am","7:00 am","8:05 am","9:15 am","10:30 am"], label:"Mobility + Full Strength Lower Body" },
+  Jue: { times:["6:00 am","7:00 am","8:05 am","9:15 am","10:30 am"], label:"Mobility Metcon & Upper Body + Core" },
+  Vie: { times:["6:00 am","7:00 am","8:05 am","9:15 am","10:30 am"], label:"Mobility Metcon + Glutes Focused" },
+  Sáb: { times:["7:15 am","8:30 am"],                                label:"Mobility Metcon & Full Body" },
+};
+
+const DAYS = ["Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+const uid  = () => `u_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+
+function calcExpiry(planId) {
+  const p = PLANS.find(x => x.id === planId);
+  const d = new Date();
+  d.setMonth(d.getMonth() + p.months);
+  return d.toISOString();
+}
+
+
+// ── MAT MAP ──────────────────────────────────────────────────────────────────
+const MATS_BACK  = Array.from({length:9}, (_,i) => ({ id:i+1,  col:i }));
+const MATS_FRONT = Array.from({length:8}, (_,i) => ({ id:i+10, col:i }));
+const TONE_GREEN = "#4a7a5a";
+
+function StudioMap({ takenMats, selectedMat, onSelect }) {
+  const W=560, H=280;
+  const leftWall=44, rightWall=W-44, topWall=30, botWall=H-30;
+  const floorW=rightWall-leftWall, floorH=botWall-topWall;
+  const matW=28, matH=52, gapX=14, rowGap=22;
+  const backTotalW=9*matW+8*gapX, frontTotalW=8*matW+7*gapX;
+  const backStartX=leftWall+(floorW-backTotalW)/2;
+  const frontStartX=leftWall+(floorW-frontTotalW)/2;
+  const totalH=2*matH+rowGap;
+  const backRowY=topWall+(floorH-totalH)/2;
+  const frontRowY=backRowY+matH+rowGap;
+
+  const renderMat=(mat,x,y)=>{
+    const isTaken=takenMats.includes(mat.id);
+    const isSelected=selectedMat===mat.id;
+    return (
+      <g key={mat.id} style={{cursor:isTaken?"not-allowed":"pointer"}} onClick={()=>!isTaken&&onSelect(mat.id)}>
+        <rect x={x+2} y={y+3} width={matW} height={matH} rx={matW/2} fill="#00000018"/>
+        <rect x={x} y={y} width={matW} height={matH} rx={matW/2}
+          fill={isSelected?"#fff":isTaken?"#2a1218":BRAND}
+          stroke={isSelected?BRAND:"transparent"} strokeWidth={isSelected?2:0}
+          opacity={isTaken?0.4:1}/>
+        <text x={x+matW/2} y={y+matH/2+4} textAnchor="middle" fontSize={9} fontWeight="700"
+          fill={isSelected?BRAND:isTaken?BRAND+"60":"#eedde2"} fontFamily="DM Sans,sans-serif">
+          {isTaken?"✕":mat.id}
+        </text>
+      </g>
+    );
+  };
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{display:"block"}}>
+      {/* Floor */}
+      <rect x={leftWall} y={topWall} width={floorW} height={floorH} fill="#f8f8f8"/>
+      {Array.from({length:18}).map((_,i)=>(
+        <rect key={i} x={leftWall} y={topWall+i*(floorH/18)} width={floorW} height={floorH/18-0.5}
+          fill={i%2===0?"#f0f0f0":"#ebebeb"} opacity={0.5}/>
+      ))}
+      {/* Left wall */}
+      <rect x={0} y={0} width={leftWall} height={H} fill="#f0eeea"/>
+      <line x1={leftWall} y1={0} x2={leftWall} y2={H} stroke="#b0a898" strokeWidth={2}/>
+      {/* Right wall */}
+      <rect x={rightWall} y={0} width={W-rightWall} height={H} fill="#f0eeea"/>
+      <line x1={rightWall} y1={0} x2={rightWall} y2={H} stroke="#b0a898" strokeWidth={2}/>
+      {/* Top wall - coach */}
+      <rect x={leftWall} y={0} width={floorW} height={topWall} fill="#f0eeea"/>
+      <ellipse cx={leftWall+floorW/2} cy={topWall/2+2} rx={36} ry={11} fill={BRAND} opacity={0.1}/>
+      <text x={leftWall+floorW/2} y={topWall/2+6} textAnchor="middle" fontSize={8}
+        fill={BRAND} fontFamily="DM Sans,sans-serif" fontWeight="700" letterSpacing={1.5}>COACH ★</text>
+      {/* Bottom wall - golf */}
+      <rect x={leftWall} y={botWall} width={floorW} height={H-botWall} fill={TONE_GREEN}/>
+      {Array.from({length:8}).map((_,i)=>(
+        <rect key={i} x={leftWall+i*(floorW/8)} y={botWall} width={floorW/8-1} height={H-botWall}
+          fill={i%2===0?TONE_GREEN:"#5a8a6a"} opacity={0.8}/>
+      ))}
+      <line x1={leftWall} y1={botWall} x2={rightWall} y2={botWall} stroke="#3a6a4a" strokeWidth={1.5}/>
+      <text x={leftWall+floorW/2} y={botWall+(H-botWall)/2+4} textAnchor="middle" fontSize={7}
+        fill="rgba(255,255,255,0.6)" fontFamily="DM Sans,sans-serif" letterSpacing={2}>CANCHA DE GOLF</text>
+      {/* Row labels */}
+      <text x={backStartX-6} y={backRowY+matH/2+4} textAnchor="end" fontSize={7} fill="#9a8f85" fontFamily="DM Sans,sans-serif">B</text>
+      <text x={frontStartX-6} y={frontRowY+matH/2+4} textAnchor="end" fontSize={7} fill="#9a8f85" fontFamily="DM Sans,sans-serif">A</text>
+      {/* Mats */}
+      {MATS_BACK.map(m=>renderMat(m, backStartX+m.col*(matW+gapX), backRowY))}
+      {MATS_FRONT.map(m=>renderMat(m, frontStartX+m.col*(matW+gapX), frontRowY))}
+      {/* Legend */}
+      {[{x:leftWall+20,label:"Disponible",fill:BRAND,op:1},{x:leftWall+110,label:"Ocupado",fill:"#2a1218",op:0.4},{x:leftWall+190,label:"Tu mat",fill:"#fff",stroke:BRAND}].map(l=>(
+        <g key={l.label}>
+          <rect x={l.x} y={botWall-18} width={10} height={10} rx={5} fill={l.fill} opacity={l.op||1} stroke={l.stroke||"none"} strokeWidth={l.stroke?1.5:0}/>
+          <text x={l.x+14} y={botWall-9} fontSize={7} fill="#888" fontFamily="DM Sans,sans-serif">{l.label}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+function Logo({ size=42, color=BRAND }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none">
+      <rect x="8"  y="14" width="22" height="50" rx="11" fill={color}/>
+      <rect x="50" y="14" width="22" height="50" rx="11" fill={color}/>
+      <line x1="30" y1="27" x2="50" y2="40" stroke={BG} strokeWidth="5.5" strokeLinecap="round"/>
+      <line x1="30" y1="53" x2="50" y2="40" stroke={BG} strokeWidth="5.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function App() {
+  const [tab,  setTab]  = useState("schedule");
+  const [day,  setDay]  = useState("Lun");
+  const [toast, setToast] = useState(null);
+  const [reservations, setReservations] = useState({});
+  const [members,      setMembers]      = useState({});
+  const [myId, setMyId] = useState(() => localStorage.getItem("ts_myid") || null);
+  const [loading, setLoading] = useState(true);
+  const me   = myId ? members[myId] : null;
+  const plan = me ? PLANS.find(p => p.id === me.planId) : null;
+
+  const [bookModal,     setBookModal]     = useState(null);
+  const [registerModal, setRegisterModal] = useState(false);
+  const [payModal,      setPayModal]      = useState(false);
+  const [bankModal,     setBankModal]     = useState(false);
+  const [matModal,      setMatModal]      = useState(null);  // {day,idx,key} after class confirmed
+  const [pickedMat,     setPickedMat]     = useState(null);
+  const [adminAuth,     setAdminAuth]     = useState(false);
+  const [adminPw,       setAdminPw]       = useState("");
+  const [adminPwErr,    setAdminPwErr]    = useState(false);
+  const [adminDay,      setAdminDay]      = useState("Lun");
+  const [adminView,     setAdminView]     = useState("slots");
+  const [regForm,  setRegForm]  = useState({ name:"", phone:"", email:"", planId:"basic" });
+  const [regErrors,setRegErrors]= useState({});
+
+  // Load all data from Supabase on mount
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      const [{ data: mems }, { data: ress }] = await Promise.all([
+        db.from("members").select("*"),
+        db.from("reservations").select("*"),
+      ]);
+      // Build members map
+      const memMap = {};
+      (mems||[]).forEach(m => {
+        memMap[m.id] = { id:m.id, name:m.name, phone:m.phone, email:m.email,
+          planId:m.plan_id, classesLeft:m.classes_left, expiresAt:m.expires_at,
+          active:m.active, pendingPayment:m.pending_payment };
+      });
+      setMembers(memMap);
+      // Build reservations map
+      const resMap = {};
+      (ress||[]).forEach(r => {
+        if (!resMap[r.slot_key]) resMap[r.slot_key] = [];
+        resMap[r.slot_key].push({ memberId:r.member_id, name:r.name, bookedAt:r.booked_at, mat:r.mat });
+      });
+      setReservations(resMap);
+      setLoading(false);
+    }
+    fetchData();
+
+    // Realtime subscription
+    const channel = db.channel('tone-realtime')
+      .on('postgres_changes', { event:'*', schema:'public', table:'reservations' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event:'*', schema:'public', table:'members' }, () => {
+        fetchData();
+      })
+      .subscribe((status) => {
+        // Fallback: poll every 5 seconds if realtime not connected
+        if (status !== 'SUBSCRIBED') {
+          const poll = setInterval(fetchData, 30000);
+          return () => clearInterval(poll);
+        }
+      });
+
+    // Poll every 30 seconds as safety net (less intrusive)
+    const safePoll = setInterval(fetchData, 30000);
+
+    return () => { db.removeChannel(channel); clearInterval(safePoll); };
+  }, []);
+
+  const persistMem = async (id, data) => {
+    await db.from("members").upsert({
+      id, name:data.name, phone:data.phone, email:data.email,
+      plan_id:data.planId, classes_left:data.classesLeft,
+      expires_at:data.expiresAt, active:data.active, pending_payment:data.pendingPayment
+    });
+    setMembers(prev => ({ ...prev, [id]: data }));
+  };
+
+  const addReservation = async (key, entry) => {
+    await db.from("reservations").insert({ slot_key:key, member_id:entry.memberId, name:entry.name, mat:entry.mat||null });
+    setReservations(prev => ({ ...prev, [key]: [...(prev[key]||[]), entry] }));
+  };
+
+  const removeReservation = async (key, memberId) => {
+    await db.from("reservations").delete().eq("slot_key", key).eq("member_id", memberId);
+    setReservations(prev => ({ ...prev, [key]: (prev[key]||[]).filter(r => r.memberId !== memberId) }));
+  };
+
+  const showToast = (msg, color=BRAND) => {
+    setToast({ msg, color });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const slotKey   = (d,i) => `${d}-${i}`;
+  const slotList  = (d,i) => reservations[slotKey(d,i)] || [];
+  const spotsLeft = (d,i) => Math.max(0, CAPACITY - slotList(d,i).length);
+  const mySlot    = (d,i) => myId && slotList(d,i).find(r => r.memberId === myId);
+
+  const myReservations = Object.entries(reservations).flatMap(([key, list]) =>
+    list.filter(r => r.memberId === myId).map(r => ({ key, ...r }))
+  ).sort((a, b) => {
+    const dayOrder = ["Lun","Mar","Mié","Jue","Vie","Sáb"];
+    const [da, ia] = a.key.split("-"); const [db, ib] = b.key.split("-");
+    const dayDiff = dayOrder.indexOf(da) - dayOrder.indexOf(db);
+    if (dayDiff !== 0) return dayDiff;
+    return parseInt(ia) - parseInt(ib);
+  });
+
+  const validateReg = () => {
+    const e = {};
+    if (!regForm.name.trim())  e.name  = "Ingresa tu nombre";
+    if (!regForm.phone.trim()) e.phone = "Ingresa tu teléfono";
+    if (!regForm.email.trim() || !regForm.email.includes("@")) e.email = "Email inválido";
+    return e;
+  };
+
+  const submitRegister = () => {
+    const e = validateReg();
+    if (Object.keys(e).length) { setRegErrors(e); return; }
+    const id   = uid();
+    const p    = PLANS.find(x => x.id === regForm.planId);
+    const member = { id, name:regForm.name.trim(), phone:regForm.phone.trim(), email:regForm.email.trim(),
+      planId:p.id, classesLeft:0, expiresAt:null, active:false, pendingPayment:true,
+      registeredAt:new Date().toISOString() };
+    persistMem(id, member);
+    setMyId(id);
+    localStorage.setItem("ts_myid", id);
+    setRegisterModal(false);
+    const msg = encodeURIComponent(
+      `🆕 *Nueva clienta - Tone Studio*\n\n👤 ${member.name}\n📱 ${member.phone}\n✉️ ${member.email}\n\n` +
+      `📦 Plan: ${p.name} · $${p.price}\n\n💳 Datos de pago:\nBanco del Pichincha · Cta. Ahorros\n` +
+      `Nro: 2211888337\nMa. Mercedes Hernández\nCI: 0915614051\naerialecuador@gmail.com`
+    );
+    window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`, "_blank");
+    showToast("¡Registro exitoso! Espera confirmación 🎉", "#4a7a5a");
+  };
+
+  const openBook = (d, i) => {
+    if (!myId) { setRegisterModal(true); return; }
+    if (!me?.active) { setPayModal(true); return; }
+    if (!plan?.unlimited && me.classesLeft <= 0) { showToast("Sin clases disponibles. Renueva tu plan.", "#c0392b"); return; }
+    if (mySlot(d,i)) return;
+    if (spotsLeft(d,i) === 0) return;
+
+    // Check: past day
+    const nowD = new Date();
+    const dowD = nowD.getDay();
+    const monD = new Date(nowD);
+    monD.setDate(nowD.getDate() - (dowD===0 ? 6 : dowD-1));
+    monD.setHours(0,0,0,0);
+    const dIdx = ["Lun","Mar","Mié","Jue","Vie","Sáb"].indexOf(d);
+    const slotDate = new Date(monD);
+    slotDate.setDate(monD.getDate() + (dIdx < 5 ? dIdx : 5));
+    slotDate.setHours(23,59,59,0);
+    if (slotDate < nowD) {
+      showToast("Este día ya pasó 🚫", "#c0392b");
+      return;
+    }
+
+    // Check: only one class per day
+    const alreadyBookedToday = myReservations.some(r => r.key.startsWith(d + "-"));
+    if (alreadyBookedToday) {
+      showToast("Solo puedes reservar una clase por día 🚫", "#c0392b");
+      return;
+    }
+
+    setBookModal({ day:d, idx:i });
+  };
+
+  const confirmBook = () => {
+    // Step 1: open mat selector
+    setMatModal({ day: bookModal.day, idx: bookModal.idx, key: slotKey(bookModal.day, bookModal.idx) });
+    setPickedMat(null);
+    setBookModal(null);
+  };
+
+  const confirmMatAndBook = () => {
+    if (!matModal) return;
+    const { day:d, idx:i, key } = matModal;
+    const entry = { memberId:myId, name:me.name, bookedAt:new Date().toISOString(), mat: pickedMat };
+    const updatedMe = !plan.unlimited ? { ...me, classesLeft: me.classesLeft - 1 } : me;
+    if (!plan.unlimited) persistMem(myId, updatedMe);
+    addReservation(key, entry);
+    setMatModal(null);
+    setPickedMat(null);
+    showToast(`¡Clase reservada! Mat ${pickedMat} 🎯`, "#4a7a5a");
+  };
+
+  const cancelBook = (key, bookedAt) => {
+    const hoursElapsed = (Date.now() - new Date(bookedAt).getTime()) / 3600000;
+    removeReservation(key, myId);
+    if (hoursElapsed < 1 && me && !plan?.unlimited) {
+      persistMem(myId, { ...me, classesLeft: me.classesLeft + 1 });
+      showToast("Clase devuelta a tu cuenta ✓", "#4a7a5a");
+    } else {
+      showToast("Reserva cancelada.", BRAND);
+    }
+  };
+
+  const adminActivate = (memberId) => {
+    const m = members[memberId];
+    if (!m) return;
+    const p = PLANS.find(x => x.id === m.planId);
+    const expiry = calcExpiry(p.id);
+    persistMem(memberId, { ...m, active:true, pendingPayment:false,
+      classesLeft: p.unlimited ? 999 : p.classes, expiresAt: expiry });
+    const exp = new Date(expiry).toLocaleDateString("es-EC");
+    const msg = encodeURIComponent(
+      `✅ *¡Tu plan está activo! - Tone Studio*\n\nHola ${m.name} 🎉\n\n` +
+      `📦 Plan: ${p.name}\n${p.unlimited ? "♾️ Clases: ILIMITADAS" : `🎟️ Clases: ${p.classes}`}\n` +
+      `📅 Válido hasta: ${exp}\n\n¡Ya puedes reservar tus clases!\ntone-studio-app.vercel.app`
+    );
+    const phoneClean = m.phone.replace(/\D/g,"");
+    const phoneWA = phoneClean.startsWith("0") ? "593" + phoneClean.slice(1) : phoneClean.startsWith("593") ? phoneClean : "593" + phoneClean;
+    window.open(`https://wa.me/${phoneWA}?text=${msg}`, "_blank");
+    showToast(`${m.name} activada ✓`, "#4a7a5a");
+  };
+
+  const adminDeactivate = (memberId) => {
+    const m = members[memberId];
+    if (!m) return;
+    const p = PLANS.find(x => x.id === m.planId);
+    persistMem(memberId, { ...m, active:false, pendingPayment:true, classesLeft:0 });
+    const msg = encodeURIComponent(
+      `⚠️ *Tu plan ha vencido - Tone Studio*\n\nHola ${m.name},\n\nTu plan *${p.name}* ha expirado.\n\n` +
+      `💳 Para reactivar transfiere a:\nBanco del Pichincha · Cta. Ahorros\nNro: 2211888337\n` +
+      `Ma. Mercedes Hernández\n\nEscríbenos cuando hayas pagado 🙏\n@tonestudio.ec`
+    );
+    const phone2 = m.phone.replace(/\D/g,"");
+    const phoneWA2 = phone2.startsWith("0") ? "593" + phone2.slice(1) : phone2.startsWith("593") ? phone2 : "593" + phone2;
+    window.open(`https://wa.me/${phoneWA2}?text=${msg}`, "_blank");
+    showToast(`${m.name} desactivada`, BRAND);
+  };
+
+  const adminCancelSlot = (key, memberId) => {
+    removeReservation(key, memberId);
+    showToast("Reserva eliminada", BRAND);
+  };
+
+  const isActive = me?.active;
+
+  if (loading) return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", background:"#f5f0e8", gap:16 }}>
+      <svg width="60" height="60" viewBox="0 0 80 80" fill="none">
+        <rect x="8" y="14" width="22" height="50" rx="11" fill="#7a3a4a"/>
+        <rect x="50" y="14" width="22" height="50" rx="11" fill="#7a3a4a"/>
+        <line x1="30" y1="27" x2="50" y2="40" stroke="#f5f0e8" strokeWidth="5.5" strokeLinecap="round"/>
+        <line x1="30" y1="53" x2="50" y2="40" stroke="#f5f0e8" strokeWidth="5.5" strokeLinecap="round"/>
+      </svg>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:2, color:"#7a3a4a" }}>CARGANDO...</div>
+    </div>
+  );
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ fontFamily:"'DM Sans',sans-serif", background:BG, minHeight:"100vh", maxWidth:420, margin:"0 auto", paddingBottom:100 }}>
+
+      {/* HEADER */}
+      <div style={{ background:BG, padding:"24px 20px 0", position:"sticky", top:0, zIndex:20, borderBottom:"1px solid #e0dbd0" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <Logo size={44}/>
+            <div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:2, color:"#1a1a1a", lineHeight:1.1 }}>TONE STUDIO</div>
+              <div style={{ fontSize:8, letterSpacing:3, color:"#aaa", fontWeight:600 }}>BY AERIAL</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {me && isActive && plan && (
+              <div style={{ background:plan.light, color:plan.color, borderRadius:20, padding:"5px 10px", fontSize:10, fontWeight:700 }}>
+                {plan.unlimited ? "♾️" : `${me.classesLeft} 🎟️`} {plan.name}
+              </div>
+            )}
+            <button className="tap" onClick={()=>setTab("admin")} style={{
+              background:"none", border:"1.5px solid #ddd", borderRadius:20,
+              padding:"4px 10px", fontSize:10, fontWeight:700, color:"#aaa"
+            }}>⚙️</button>
+          </div>
+        </div>
+
+        {me && !isActive && (
+          <div style={{ background:"#fff3cd", border:"1px solid #ffc107", borderRadius:10, padding:"8px 12px", marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#856404" }}>
+                {me.pendingPayment ? "⏳ Pago pendiente de confirmación" : "⚠️ Tu plan ha vencido"}
+              </div>
+              <div style={{ fontSize:10, color:"#856404" }}>
+                {me.pendingPayment ? "El admin activará tu cuenta pronto" : "Renueva para seguir entrenando"}
+              </div>
+            </div>
+            {!me.pendingPayment && (
+              <button className="tap" onClick={()=>setPayModal(true)} style={{
+                background:BRAND, color:"#fff", border:"none", borderRadius:16, padding:"5px 10px", fontSize:10, fontWeight:700
+              }}>Renovar</button>
+            )}
+          </div>
+        )}
+
+        <div style={{ display:"flex", background:"#e8e2d8", borderRadius:12, padding:3 }}>
+          {[{id:"schedule",label:"Horarios"},{id:"mine",label:`Mis reservas${myReservations.length?` · ${myReservations.length}`:""}`},{id:"profile",label:"Perfil"}].map(t=>(
+            <button key={t.id} className="tap" onClick={()=>setTab(t.id)} style={{
+              flex:1, padding:"9px 0", borderRadius:10, border:"none", fontSize:13, fontWeight:600,
+              background: tab===t.id && tab!=="admin" && tab!=="profile" || tab===t.id && tab==="profile" ? BG : "transparent",
+              color:      tab===t.id ? "#1a1a1a" : "#999",
+              boxShadow:  tab===t.id ? "0 1px 4px #00000012" : "none",
+              transition:"all .2s"
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {tab==="schedule" && (() => {
+          const now = new Date();
+          const monthName = now.toLocaleDateString("es-EC", {month:"long", year:"numeric"}).toUpperCase();
+          const dow = now.getDay();
+          const monday = new Date(now);
+          monday.setDate(now.getDate() - (dow===0 ? 6 : dow-1));
+          const dayDates = DAYS.map((d,i) => {
+            const dt = new Date(monday);
+            dt.setDate(monday.getDate() + (i < 5 ? i : 5));
+            const isPast = dt < now && !dt.toDateString()===now.toDateString();
+            const endOfDay = new Date(dt); endOfDay.setHours(23,59,59,0);
+            return { label:d, date:dt.getDate(), isToday: dt.toDateString()===now.toDateString(), isPast: endOfDay < now };
+          });
+          return (
+            <div style={{ paddingBottom:10 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#aaa", letterSpacing:2, padding:"10px 0 6px" }}>
+                {monthName}
+              </div>
+              <div style={{ display:"flex", gap:6, overflowX:"auto" }}>
+                {dayDates.map(({label,date,isToday,isPast})=>(
+                  <button key={label} className="tap" onClick={()=>setDay(label)} style={{
+                    flexShrink:0, width:52, padding:"8px 0", borderRadius:14, border:"none",
+                    background: isPast ? "#e8e2d8" : day===label ? BRAND : isToday ? "#1a1a1a" : "#e8e2d8",
+                    color: isPast ? "#ccc" : day===label||isToday ? "#fff" : "#666",
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+                    transition:"all .2s", position:"relative", opacity: isPast ? 0.5 : 1
+                  }}>
+                    <span style={{ fontSize:9, fontWeight:600, opacity:0.8 }}>{label.toUpperCase()}</span>
+                    <span style={{ fontSize:17, fontWeight:700, textDecoration: isPast ? "line-through" : "none" }}>{date}</span>
+                    {isPast && <span style={{ fontSize:6, color:"#aaa", letterSpacing:0.5 }}>PASÓ</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* SCHEDULE */}
+      {tab==="schedule" && (
+        <div style={{ padding:"14px 16px 0" }}>
+          <div style={{ background:"#fff", borderRadius:14, padding:"10px 14px", marginBottom:10, borderLeft:`3px solid ${BRAND}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:BRAND, letterSpacing:1 }}>OUR MODE · {day.toUpperCase()}</div>
+            <div style={{ fontSize:13, color:"#444", fontWeight:600, marginTop:2 }}>{SCHEDULE[day].label}</div>
+          </div>
+
+          {!me && (
+            <div style={{ background:"#eedde2", borderRadius:14, padding:"12px 14px", marginBottom:10, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:BRAND }}>¡Únete a Tone Studio!</div>
+                <div style={{ fontSize:11, color:"#7a3a4a90" }}>Registra tu plan para reservar</div>
+              </div>
+              <button className="tap" onClick={()=>setRegisterModal(true)} style={{
+                background:BRAND, color:"#fff", border:"none", borderRadius:16, padding:"8px 14px", fontSize:12, fontWeight:700
+              }}>Registrarse</button>
+            </div>
+          )}
+
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
+            <button className="tap" onClick={()=>setBankModal(true)} style={{
+              background:"#fff", border:`1.5px solid ${BRAND}40`, borderRadius:20,
+              padding:"8px 20px", fontSize:12, fontWeight:700, color:BRAND,
+              display:"flex", alignItems:"center", gap:6, boxShadow:"0 2px 8px #0000000a"
+            }}>💳 Datos bancarios para pagos</button>
+          </div>
+
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:2, color:"#bbb", marginBottom:10 }}>
+            {SCHEDULE[day].times.length} CLASES · {CAPACITY} CUPOS C/U
+          </div>
+
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {SCHEDULE[day].times.map((time,idx)=>{
+              const key   = slotKey(day,idx);
+              const left  = spotsLeft(day,idx);
+              const myRes = mySlot(day,idx);
+              const myMatNum = myRes?.mat;
+              const isRes = !!mySlot(day,idx);
+              const full  = left===0 && !isRes;
+              const pct   = Math.round((slotList(day,idx).length/CAPACITY)*100);
+              return (
+                <div key={idx} className={!isRes&&!full?"tap":""} onClick={()=>openBook(day,idx)} style={{
+                  background: isRes ? "#eedde2" : "#fff",
+                  border:`2px solid ${isRes ? BRAND+"50" : "transparent"}`,
+                  borderRadius:16, padding:"14px 16px", opacity:full?0.55:1, boxShadow:"0 2px 8px #0000000a"
+                }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div>
+                      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:1.5, color:BRAND, lineHeight:1 }}>{time}</div>
+                      <div style={{ fontSize:11, color:"#999", marginTop:2, fontWeight:500 }}>60 min · {SCHEDULE[day].label}</div>
+                    </div>
+                    {isRes  ? <span style={{ background:BRAND,color:"#fff",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700 }}>✓ Reservado</span>
+                    : full  ? <span style={{ background:"#e8e2d8",color:"#aaa",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700 }}>Lleno</span>
+                             : <span style={{ background:BRAND,color:"#fff",borderRadius:20,padding:"5px 12px",fontSize:11,fontWeight:700 }}>Reservar</span>}
+                  </div>
+                  <div style={{ marginTop:10 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                      <span style={{ fontSize:10, color:"#bbb", fontWeight:600 }}>CUPOS</span>
+                      <span style={{ fontSize:10, fontWeight:700, color: full?"#c0392b":BRAND }}>
+                        {isRes ? `🎯 Mat ${mySlot(day,idx)?.mat||"asignado"}` : full ? "Sin cupos" : `${left} de ${CAPACITY}`}
+                      </span>
+                    </div>
+                    <div style={{ background:"#f0ece4", borderRadius:4, height:4 }}>
+                      <div style={{ width:`${pct}%`, height:4, borderRadius:4, background:BRAND, transition:"width .4s" }}/>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MY RESERVATIONS */}
+      {tab==="mine" && (
+        <div style={{ padding:"14px 16px 0" }}>
+          {!me ? (
+            <div style={{ textAlign:"center", padding:"70px 20px" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>👤</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#ccc", letterSpacing:1 }}>AÚN NO TIENES CUENTA</div>
+              <button className="tap" onClick={()=>setRegisterModal(true)} style={{
+                marginTop:20, padding:"13px 30px", background:BRAND, color:"#fff",
+                border:"none", borderRadius:24, fontSize:13, fontWeight:700
+              }}>Registrarme</button>
+            </div>
+          ) : myReservations.length===0 ? (
+            <div style={{ textAlign:"center", padding:"70px 20px" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>📋</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#ccc", letterSpacing:1 }}>SIN RESERVAS AÚN</div>
+              <button className="tap" onClick={()=>setTab("schedule")} style={{
+                marginTop:20, padding:"13px 30px", background:BRAND, color:"#fff",
+                border:"none", borderRadius:24, fontSize:13, fontWeight:700
+              }}>Ver Horarios</button>
+            </div>
+          ) : (
+            <div>
+              {me && plan && (
+                <div style={{ background:plan.light, borderRadius:16, padding:"14px 16px", marginBottom:14, border:`2px solid ${plan.color}20` }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:plan.color }}>{me.name}</div>
+                      <div style={{ fontSize:11, color:plan.color+"90" }}>📦 {plan.name} · ${plan.price}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:20, fontWeight:700, color:plan.color }}>{plan.unlimited?"♾️":me.classesLeft}</div>
+                      <div style={{ fontSize:9, color:plan.color+"80", fontWeight:700 }}>{plan.unlimited?"ILIMITADO":"CLASES"}</div>
+                    </div>
+                  </div>
+                  {me.expiresAt && <div style={{ fontSize:10, color:plan.color+"80", marginTop:6 }}>Vence: {new Date(me.expiresAt).toLocaleDateString("es-EC")}</div>}
+                </div>
+              )}
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {myReservations.map(({ key, bookedAt })=>{
+                  const [d,i] = key.split("-");
+                  const idx = parseInt(i);
+                  const sched = SCHEDULE[d];
+                  if (!sched || !sched.times[idx]) return null;
+                  const hoursElapsed = (Date.now() - new Date(bookedAt).getTime()) / 3600000;
+                  return (
+                    <div key={key} style={{ background:"#fff", borderRadius:16, padding:"14px 16px", boxShadow:"0 2px 8px #0000000a" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                        <div>
+                          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:BRAND, letterSpacing:1 }}>{sched.times[idx]}</div>
+                          <div style={{ fontSize:12, color:"#555", fontWeight:600, marginTop:3 }}>📅 {d}</div>
+                          <div style={{ fontSize:11, color:"#888", marginTop:1 }}>{sched.label}</div>
+                          <div style={{ fontSize:10, color: hoursElapsed<1?"#4a7a5a":"#c0392b", marginTop:4, fontWeight:600 }}>
+                            {hoursElapsed<1?"✓ Cancelación gratuita disponible":"⚠️ Cancelar ahora descuenta la clase"}
+                          </div>
+                        </div>
+                        <button className="tap" onClick={()=>cancelBook(key, bookedAt)} style={{
+                          background:"none", border:`1.5px solid ${BRAND}60`, borderRadius:20, padding:"5px 12px",
+                          fontSize:11, fontWeight:700, color:BRAND
+                        }}>Cancelar</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PROFILE */}
+      {tab==="profile" && (
+        <div style={{ padding:"14px 16px 0" }}>
+          {!me ? (
+            <div style={{ textAlign:"center", padding:"60px 20px" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>👤</div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#ccc", letterSpacing:1 }}>SIN CUENTA</div>
+              <button className="tap" onClick={()=>setRegisterModal(true)} style={{
+                marginTop:20, padding:"13px 30px", background:BRAND, color:"#fff",
+                border:"none", borderRadius:24, fontSize:13, fontWeight:700
+              }}>Registrarme</button>
+            </div>
+          ) : (
+            <div>
+              {/* Profile header */}
+              <div style={{ background:BRAND, borderRadius:20, padding:"24px 20px", marginBottom:16, position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", top:-20, right:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.08)" }}/>
+                <div style={{ position:"absolute", bottom:-30, left:-10, width:80, height:80, borderRadius:"50%", background:"rgba(255,255,255,0.05)" }}/>
+                <div style={{ display:"flex", alignItems:"center", gap:14, position:"relative" }}>
+                  <div style={{ width:60, height:60, borderRadius:"50%", background:"rgba(255,255,255,0.2)",
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                    {me.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#fff", letterSpacing:1, lineHeight:1 }}>
+                      {me.name}
+                    </div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)", marginTop:3 }}>{me.email}</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.6)", marginTop:1 }}>📱 {me.phone}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Plan card */}
+              {plan && (
+                <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:12, boxShadow:"0 2px 8px #0000000a" }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#aaa", letterSpacing:2, marginBottom:10 }}>MI PLAN</div>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:16, fontWeight:700, color:plan.color }}>{plan.name}</div>
+                      <div style={{ fontSize:12, color:"#888", marginTop:2 }}>
+                        {plan.unlimited ? "Clases ilimitadas" : `${plan.classes} clases incluidas`}
+                      </div>
+                      {me.expiresAt && (
+                        <div style={{ fontSize:11, color:"#aaa", marginTop:2 }}>
+                          Vence: {new Date(me.expiresAt).toLocaleDateString("es-EC")}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:28, fontWeight:700, color:plan.color }}>
+                        {plan.unlimited ? "♾️" : me.classesLeft}
+                      </div>
+                      <div style={{ fontSize:9, color:plan.color+"90", fontWeight:700 }}>
+                        {plan.unlimited ? "ILIMITADO" : "CLASES"}
+                      </div>
+                    </div>
+                  </div>
+                  {!me.active && (
+                    <div style={{ marginTop:10, background:"#fff3cd", borderRadius:8, padding:"8px 12px", fontSize:11, color:"#856404", fontWeight:600 }}>
+                      ⏳ {me.pendingPayment ? "Pago pendiente de confirmación" : "Plan vencido — contacta al studio"}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Stats */}
+              <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+                {[
+                  { label:"Reservas esta semana", val: myReservations.length, color:BRAND, bg:"#eedde2" },
+                  { label:"Clases disponibles",   val: plan?.unlimited ? "♾️" : me.classesLeft, color:"#4a7a5a", bg:"#ddeee3" },
+                ].map(s=>(
+                  <div key={s.label} style={{ flex:1, background:s.bg, borderRadius:14, padding:"14px 10px", textAlign:"center" }}>
+                    <div style={{ fontSize:24, fontWeight:700, color:s.color }}>{s.val}</div>
+                    <div style={{ fontSize:9, color:s.color+"90", fontWeight:700, letterSpacing:0.5, marginTop:2 }}>{s.label.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Menu items */}
+              <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", boxShadow:"0 2px 8px #0000000a" }}>
+                {[
+                  { icon:"💳", label:"Datos de pago", action:()=>setBankModal(true) },
+                  { icon:"📋", label:"Mis reservas", action:()=>setTab("mine") },
+                  { icon:"🔄", label:"Renovar plan", action:()=>setPayModal(true) },
+                ].map((item, i, arr)=>(
+                  <div key={item.label} className="tap" onClick={item.action} style={{
+                    padding:"14px 16px", display:"flex", justifyContent:"space-between", alignItems:"center",
+                    borderBottom: i<arr.length-1 ? "1px solid #f5f0e8" : "none"
+                  }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <span style={{ fontSize:18 }}>{item.icon}</span>
+                      <span style={{ fontSize:14, fontWeight:500, color:"#1a1a1a" }}>{item.label}</span>
+                    </div>
+                    <span style={{ color:"#ccc", fontSize:16 }}>→</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Logout */}
+              <button className="tap" onClick={()=>{
+                localStorage.removeItem("ts_myid");
+                setMyId(null);
+                setTab("schedule");
+                showToast("Sesión cerrada", "#1a1a1a");
+              }} style={{
+                width:"100%", marginTop:12, padding:"13px", background:"none",
+                border:"1.5px solid #e0dbd0", borderRadius:14,
+                fontSize:13, fontWeight:700, color:"#aaa", cursor:"pointer"
+              }}>Cerrar sesión</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ADMIN */}
+      {tab==="admin" && (
+        <div style={{ padding:"14px 16px 0" }}>
+          {!adminAuth ? (
+            <div style={{ paddingTop:40 }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"#1a1a1a", letterSpacing:2, marginBottom:4 }}>ADMIN ⚙️</div>
+              <div style={{ fontSize:13, color:"#aaa", marginBottom:20 }}>Acceso exclusivo Tone Studio</div>
+              <input type="password" value={adminPw}
+                onChange={e=>{ setAdminPw(e.target.value); setAdminPwErr(false); }}
+                onKeyDown={e=>{ if(e.key==="Enter"){ if(adminPw===ADMIN_PASSWORD)setAdminAuth(true); else setAdminPwErr(true); }}}
+                placeholder="Contraseña"
+                style={{ width:"100%", padding:"13px 16px", borderRadius:12, border:`2px solid ${adminPwErr?"#c0392b":"#e0dbd0"}`, fontSize:15, background:"#fff", color:"#1a1a1a", marginBottom:8 }}
+              />
+              {adminPwErr && <div style={{ color:"#c0392b", fontSize:12, marginBottom:8, fontWeight:600 }}>Contraseña incorrecta</div>}
+              <button className="tap" onClick={()=>{ if(adminPw===ADMIN_PASSWORD)setAdminAuth(true); else setAdminPwErr(true); }} style={{
+                width:"100%", padding:"14px", background:BRAND, color:"#fff", border:"none", borderRadius:14, fontSize:15, fontWeight:700
+              }}>Entrar</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, letterSpacing:2 }}>PANEL ADMIN</div>
+                  <div style={{ fontSize:11, color:"#aaa" }}>{Object.keys(members).length} clientas · {Object.values(reservations).reduce((a,l)=>a+l.length,0)} reservas</div>
+                </div>
+                <button className="tap" onClick={()=>{ setAdminAuth(false); setAdminPw(""); setTab("schedule"); }} style={{
+                  background:"none", border:"1.5px solid #ddd", borderRadius:20, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#aaa"
+                }}>Salir</button>
+              </div>
+
+              <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                {[
+                  { label:"Activas",    val:Object.values(members).filter(m=>m.active).length,          color:"#4a7a5a", bg:"#ddeee3" },
+                  { label:"Pendientes", val:Object.values(members).filter(m=>m.pendingPayment).length,  color:"#856404", bg:"#fff3cd" },
+                  { label:"Reservas",   val:Object.values(reservations).reduce((a,l)=>a+l.length,0),   color:BRAND,     bg:"#eedde2" },
+                ].map(s=>(
+                  <div key={s.label} style={{ flex:1, background:s.bg, borderRadius:14, padding:"12px 8px", textAlign:"center" }}>
+                    <div style={{ fontSize:22, fontWeight:700, color:s.color }}>{s.val}</div>
+                    <div style={{ fontSize:9, color:s.color+"90", fontWeight:700 }}>{s.label.toUpperCase()}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display:"flex", background:"#e8e2d8", borderRadius:12, padding:3, marginBottom:14 }}>
+                {[{id:"slots",label:"Reservas"},{id:"members",label:"Clientas"}].map(t=>(
+                  <button key={t.id} className="tap" onClick={()=>setAdminView(t.id)} style={{
+                    flex:1, padding:"8px 0", borderRadius:10, border:"none", fontSize:12, fontWeight:600,
+                    background: adminView===t.id ? BG : "transparent",
+                    color:      adminView===t.id ? "#1a1a1a" : "#999",
+                    transition:"all .2s"
+                  }}>{t.label}</button>
+                ))}
+              </div>
+
+              {adminView==="slots" && (
+                <div>
+                  <div style={{ display:"flex", gap:6, overflowX:"auto", marginBottom:12 }}>
+                    {DAYS.map(d=>{
+                      const cnt = Object.entries(reservations).filter(([k])=>k.startsWith(d+"-")).reduce((a,[,l])=>a+l.length,0);
+                      return (
+                        <button key={d} className="tap" onClick={()=>setAdminDay(d)} style={{
+                          flexShrink:0, padding:"6px 13px", borderRadius:20, border:"none",
+                          background: adminDay===d ? BRAND : "#e8e2d8",
+                          color:      adminDay===d ? "#fff" : "#666",
+                          fontSize:12, fontWeight:700, transition:"all .2s"
+                        }}>{d}{cnt>0&&<span style={{ opacity:.7 }}> ·{cnt}</span>}</button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    {SCHEDULE[adminDay].times.map((time,idx)=>{
+                      const key  = slotKey(adminDay,idx);
+                      const list = reservations[key]||[];
+                      return (
+                        <div key={idx} style={{ background:"#fff", borderRadius:16, overflow:"hidden", boxShadow:"0 2px 8px #0000000a" }}>
+                          <div style={{ background:"#eedde2", padding:"10px 14px", display:"flex", justifyContent:"space-between" }}>
+                            <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:BRAND, letterSpacing:1 }}>{time}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:BRAND }}>{list.length}/{CAPACITY}</span>
+                          </div>
+                          {list.length===0
+                            ? <div style={{ padding:"10px 14px", fontSize:12, color:"#ccc", fontStyle:"italic" }}>Sin reservas</div>
+                            : list.map(r=>{
+                                const m = members[r.memberId];
+                                return (
+                                  <div key={r.memberId} style={{ padding:"10px 14px", borderBottom:"1px solid #f5f0e8", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                    <div>
+                                      <div style={{ fontSize:13, fontWeight:600 }}>{r.name}</div>
+                                      {m && <div style={{ fontSize:10, color:"#aaa" }}>📱 {m.phone} · 📦 {PLANS.find(p=>p.id===m.planId)?.name}</div>}
+                                    </div>
+                                    <button className="tap" onClick={()=>adminCancelSlot(key,r.memberId)} style={{
+                                      background:"none", border:"1.5px solid #ffcccc", borderRadius:20, padding:"3px 9px",
+                                      fontSize:10, fontWeight:700, color:"#c0392b"
+                                    }}>✕</button>
+                                  </div>
+                                );
+                              })
+                          }
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {adminView==="members" && (
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {Object.values(members).length===0 && (
+                    <div style={{ textAlign:"center", padding:"40px 20px", color:"#ccc", fontSize:13 }}>Sin clientas registradas aún</div>
+                  )}
+                  {Object.values(members).map(m=>{
+                    const mp = PLANS.find(p=>p.id===m.planId);
+                    return (
+                      <div key={m.id} style={{ background:"#fff", borderRadius:16, padding:"14px 16px", boxShadow:"0 2px 8px #0000000a" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:700 }}>{m.name}</div>
+                            <div style={{ fontSize:11, color:"#888" }}>📱 {m.phone}</div>
+                            <div style={{ fontSize:11, color:"#888" }}>✉️ {m.email}</div>
+                          </div>
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:20,
+                              background: m.active?"#ddeee3":m.pendingPayment?"#fff3cd":"#eedde2",
+                              color:      m.active?"#4a7a5a":m.pendingPayment?"#856404":"#c0392b"
+                            }}>
+                              {m.active?"✓ Activa":m.pendingPayment?"⏳ Pendiente":"✕ Inactiva"}
+                            </div>
+                            <div style={{ fontSize:11, color:"#aaa", marginTop:4 }}>📦 {mp?.name}</div>
+                            <div style={{ fontSize:11, fontWeight:700, color:BRAND }}>{mp?.unlimited?"♾️":m.classesLeft} clases</div>
+                          </div>
+                        </div>
+                        {m.expiresAt && <div style={{ fontSize:10, color:"#bbb", marginBottom:8 }}>Vence: {new Date(m.expiresAt).toLocaleDateString("es-EC")}</div>}
+                        <div style={{ display:"flex", gap:8 }}>
+                          {(m.pendingPayment || !m.active) && (
+                            <button className="tap" onClick={()=>adminActivate(m.id)} style={{
+                              flex:1, padding:"8px", background:"#4a7a5a", color:"#fff",
+                              border:"none", borderRadius:10, fontSize:11, fontWeight:700
+                            }}>✓ Confirmar pago</button>
+                          )}
+                          {m.active && (
+                            <button className="tap" onClick={()=>adminDeactivate(m.id)} style={{
+                              flex:1, padding:"8px", background:"none", color:"#c0392b",
+                              border:"1.5px solid #ffcccc", borderRadius:10, fontSize:11, fontWeight:700
+                            }}>Desactivar + notificar</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* REGISTER MODAL */}
+      {registerModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000055", display:"flex", alignItems:"flex-end", zIndex:100 }} onClick={()=>setRegisterModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            background:BG, borderRadius:"24px 24px 0 0", padding:"24px 24px 44px",
+            width:"100%", maxWidth:420, margin:"0 auto", boxShadow:"0 -8px 40px #00000020"
+          }}>
+            <div style={{ width:36, height:4, background:"#ddd", borderRadius:4, margin:"0 auto 20px" }}/>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:BRAND, letterSpacing:2, marginBottom:4 }}>ÚNETE A TONE STUDIO</div>
+            <div style={{ fontSize:12, color:"#aaa", marginBottom:16 }}>Entrenamiento funcional exclusivo para mujeres</div>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:"#aaa", marginBottom:6 }}>ELIGE TU PLAN</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:14 }}>
+              {PLANS.map(p=>(
+                <div key={p.id} className="tap" onClick={()=>setRegForm(f=>({...f,planId:p.id}))} style={{
+                  border:`2px solid ${regForm.planId===p.id ? p.color : "#e0dbd0"}`,
+                  background: regForm.planId===p.id ? p.light : "#fff",
+                  borderRadius:12, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center"
+                }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:p.color }}>{p.name}</div>
+                    <div style={{ fontSize:11, color:p.color+"90" }}>{p.unlimited?"Ilimitado":`${p.classes} clases`} · {p.months>1?`${p.months} meses`:"mensual"}</div>
+                  </div>
+                  <div style={{ fontSize:16, fontWeight:700, color:p.color }}>${p.price}</div>
+                </div>
+              ))}
+            </div>
+            {[{key:"name",label:"NOMBRE",placeholder:"Ej. María García",type:"text"},
+              {key:"phone",label:"TELÉFONO",placeholder:"Ej. 0991234567",type:"tel"},
+              {key:"email",label:"EMAIL",placeholder:"Ej. maria@gmail.com",type:"email"}].map(f=>(
+              <div key={f.key} style={{ marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, color:"#aaa", marginBottom:4 }}>{f.label}</div>
+                <input type={f.type} value={regForm[f.key]}
+                  onChange={e=>{ setRegForm(p=>({...p,[f.key]:e.target.value})); setRegErrors(p=>({...p,[f.key]:null})); }}
+                  placeholder={f.placeholder}
+                  style={{ width:"100%", padding:"11px 14px", borderRadius:12, border:`2px solid ${regErrors[f.key]?"#c0392b":"#e0dbd0"}`, fontSize:14, background:"#fff" }}
+                />
+                {regErrors[f.key] && <div style={{ color:"#c0392b", fontSize:11, marginTop:2, fontWeight:600 }}>{regErrors[f.key]}</div>}
+              </div>
+            ))}
+            <button className="tap" onClick={submitRegister} style={{
+              width:"100%", padding:"14px", marginTop:6, background:BRAND, color:"#fff",
+              border:"none", borderRadius:14, fontSize:15, fontWeight:700
+            }}>Registrarme y ver datos de pago</button>
+            <div style={{ fontSize:10, color:"#bbb", textAlign:"center", marginTop:8 }}>Se enviará un WhatsApp al admin con tus datos 📲</div>
+          </div>
+        </div>
+      )}
+
+      {/* PAY MODAL */}
+      {payModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000055", display:"flex", alignItems:"flex-end", zIndex:100 }} onClick={()=>setPayModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            background:BG, borderRadius:"24px 24px 0 0", padding:"24px 24px 44px",
+            width:"100%", maxWidth:420, margin:"0 auto", boxShadow:"0 -8px 40px #00000020"
+          }}>
+            <div style={{ width:36, height:4, background:"#ddd", borderRadius:4, margin:"0 auto 20px" }}/>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:BRAND, letterSpacing:2, marginBottom:14 }}>RENUEVA TU PLAN</div>
+            <div style={{ background:"#fff", borderRadius:16, padding:"16px", marginBottom:16, border:`1px solid ${BRAND}20` }}>
+              <div style={{ fontSize:13, color:"#555", lineHeight:2 }}>
+                <b>Banco del Pichincha</b> · Cta. Ahorros<br/>
+                Nro: <b>2211888337</b><br/>
+                Ma. Mercedes Hernández<br/>
+                CI: 0915614051<br/>
+                aerialecuador@gmail.com
+              </div>
+            </div>
+            <button className="tap" onClick={()=>{
+              if(!me) return;
+              const msg = encodeURIComponent(`💳 *Renovación - Tone Studio*\n\nHola! Soy ${me.name} y acabo de realizar el pago.\n📱 ${me.phone}`);
+              window.open(`https://wa.me/${ADMIN_WA}?text=${msg}`,"_blank");
+              setPayModal(false);
+              showToast("WhatsApp enviado al admin 📲", "#4a7a5a");
+            }} style={{
+              width:"100%", padding:"14px", background:BRAND, color:"#fff",
+              border:"none", borderRadius:14, fontSize:14, fontWeight:700
+            }}>Ya pagué — Notificar al admin 📲</button>
+          </div>
+        </div>
+      )}
+
+      {/* BANK MODAL */}
+      {bankModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000055", display:"flex", alignItems:"flex-end", zIndex:100 }} onClick={()=>setBankModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            background:BG, borderRadius:"24px 24px 0 0", padding:"24px 24px 44px",
+            width:"100%", maxWidth:420, margin:"0 auto", boxShadow:"0 -8px 40px #00000020"
+          }}>
+            <div style={{ width:36, height:4, background:"#ddd", borderRadius:4, margin:"0 auto 20px" }}/>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:BRAND, letterSpacing:2, marginBottom:16 }}>💳 DATOS DE PAGO</div>
+            <div style={{ background:"#fff", borderRadius:16, padding:"18px", border:`1px solid ${BRAND}20` }}>
+              <div style={{ fontSize:13, color:"#555", lineHeight:2.2 }}>
+                <b>Banco del Pichincha</b><br/>
+                Cuenta de Ahorros<br/>
+                Nro: <b>2211888337</b><br/>
+                Ma. Mercedes Hernández<br/>
+                CI: 0915614051<br/>
+                aerialecuador@gmail.com
+              </div>
+            </div>
+            <div style={{ fontSize:11, color:"#aaa", textAlign:"center", marginTop:12 }}>
+              ⚠️ Cancelaciones con menos de {CANCEL_HOURS}h de anticipación descuentan la clase
+            </div>
+            <button className="tap" onClick={()=>setBankModal(false)} style={{
+              width:"100%", padding:"13px", marginTop:16, background:BRAND, color:"#fff",
+              border:"none", borderRadius:14, fontSize:14, fontWeight:700
+            }}>Cerrar</button>
+          </div>
+        </div>
+      )}
+
+      {/* BOOK MODAL */}
+      {bookModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000055", display:"flex", alignItems:"flex-end", zIndex:100 }} onClick={()=>setBookModal(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{
+            background:BG, borderRadius:"24px 24px 0 0", padding:"24px 24px 44px",
+            width:"100%", maxWidth:420, margin:"0 auto", boxShadow:"0 -8px 40px #00000020"
+          }}>
+            <div style={{ width:36, height:4, background:"#ddd", borderRadius:4, margin:"0 auto 20px" }}/>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:BRAND, letterSpacing:2, lineHeight:1, marginBottom:4 }}>CONFIRMAR RESERVA</div>
+            <div style={{ fontSize:14, color:"#555", fontWeight:600, marginBottom:4 }}>⏰ {bookModal.day} · {SCHEDULE[bookModal.day].times[bookModal.idx]}</div>
+            <div style={{ fontSize:12, color:"#888", marginBottom:4 }}>{SCHEDULE[bookModal.day].label}</div>
+            <div style={{ fontSize:11, color:"#aaa", marginBottom:16 }}>
+              {spotsLeft(bookModal.day,bookModal.idx)} cupos disponibles
+              {plan && !plan.unlimited && <span> · Te quedarán <b>{me.classesLeft-1}</b> clases</span>}
+            </div>
+            <div style={{ background:"#fff3cd", borderRadius:10, padding:"8px 12px", marginBottom:16, fontSize:11, color:"#856404" }}>
+              ⚠️ Cancelaciones con menos de {CANCEL_HOURS}h de anticipación descuentan la clase
+            </div>
+            <button className="tap" onClick={confirmBook} style={{
+              width:"100%", padding:"14px", background:BRAND, color:"#fff",
+              border:"none", borderRadius:14, fontSize:15, fontWeight:700
+            }}>Confirmar ✓</button>
+          </div>
+        </div>
+      )}
+
+
+      {/* MAT MODAL */}
+      {matModal && (() => {
+        const takenMats = (reservations[matModal.key]||[]).map(r=>r.mat).filter(m=>m!=null);
+        return (
+          <div style={{position:"fixed",inset:0,background:"#00000055",display:"flex",alignItems:"flex-end",zIndex:100}}
+            onClick={()=>setMatModal(null)}>
+            <div onClick={e=>e.stopPropagation()} style={{
+              background:BG, borderRadius:"24px 24px 0 0", padding:"20px 16px 44px",
+              width:"100%", maxWidth:420, margin:"0 auto", boxShadow:"0 -8px 40px #00000020"
+            }}>
+              <div style={{width:36,height:4,background:"#ddd",borderRadius:4,margin:"0 auto 16px"}}/>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:BRAND,letterSpacing:2,marginBottom:2}}>
+                ESCOGE TU MAT
+              </div>
+              <div style={{fontSize:11,color:"#aaa",marginBottom:12}}>
+                {matModal.day} · {SCHEDULE[matModal.day].times[matModal.idx]}
+              </div>
+              <div style={{background:"#fff",borderRadius:16,padding:"10px 6px",marginBottom:12,overflow:"hidden"}}>
+                <StudioMap
+                  takenMats={takenMats}
+                  selectedMat={pickedMat}
+                  onSelect={setPickedMat}
+                />
+              </div>
+              {pickedMat && (
+                <div style={{background:"#eedde2",borderRadius:12,padding:"10px 14px",marginBottom:12,
+                  display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:BRAND}}>Mat {pickedMat} seleccionado ✓</div>
+                </div>
+              )}
+              <button className="tap" onClick={confirmMatAndBook} style={{
+                width:"100%", padding:"14px",
+                background: pickedMat ? BRAND : "#e0dbd0",
+                color: pickedMat ? "#fff" : "#aaa",
+                border:"none", borderRadius:14,
+                fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700,
+              }}>
+                {pickedMat ? `Confirmar Mat ${pickedMat} ✓` : "Selecciona un mat"}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{
+          position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)",
+          background:toast.color, color:"#fff", padding:"12px 24px", borderRadius:24,
+          fontSize:13, fontWeight:700, boxShadow:"0 4px 20px #00000025",
+          zIndex:200, whiteSpace:"nowrap", maxWidth:"90vw", textAlign:"center"
+        }}>{toast.msg}</div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
